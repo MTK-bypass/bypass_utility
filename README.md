@@ -4,7 +4,7 @@ Small utility to disable bootrom protection(sla and daa)
 ## Usage on Windows
 Skip steps 1-5 after first usage
 
-1. Install [python](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-devel-filter-1.2.6.0.exe/download)(select "Add Python X.X to PATH")
+1. Install [python](https://www.python.org/downloads)(select "Add Python X.X to PATH")
 2. Install [libusb-win32](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-devel-filter-1.2.6.0.exe/download)
 3. Lunch filter wizard, click next
 4. Connect powered off phone with volume+ button, you should see new serial device in the list. Select it and click install
