@@ -28,7 +28,7 @@ def main():
 
         hw_code = config["hw_code"]
         watchdog_address = config["watchdog_address"]
-        var_0 = config["var_0"]
+        var_0 = config["var_0"] if "var_0" in config else None
         var_1 = config["var_1"]
 
     device = Device().find()
