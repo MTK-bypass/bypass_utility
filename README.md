@@ -1,6 +1,9 @@
 # Bypass utility
 Small utility to disable bootrom protection(sla and daa)
 
+## Payloads
+https://github.com/MTK-bypass/exploits_collection
+
 ## Usage on Windows
 Skip steps 1-5 after first usage
 
@@ -14,7 +17,7 @@ pip install pyusb pyserial json5
 ```
 6. Run this command and connect your powered off phone with volume+ button, you should get "Protection disabled" at the end
 ```
-python main.py -c <config file> -p <payload file>
+python main.py
 ```
 7. After that, without disconnecting phone, run SP Flash Tool
 
@@ -30,7 +33,7 @@ pip install pyusb pyserial json5
 ```
 3. Run this command as root and connect your powered off phone with volume+ button, you should get "Protection disabled" at the end
 ```
-./main.py -c <config file> -p <payload file>
+./main.py
 ```
 4. After that, without disconnecting phone, run SP Flash Tool in UART Connection mode
 
