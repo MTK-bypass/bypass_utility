@@ -5,7 +5,7 @@ class Config:
     watchdog_address: int = 0x10007000
     payload_address: int = 0x100A00
     var_0: int = None
-    var_1: int
+    var_1: int = 0xA
     payload: str
 
     def default(self, hw_code):
@@ -37,7 +37,9 @@ class Config:
         if "var_0" in entry:
             self.var_0 = entry["var_0"]
 
-        self.var_1 = entry["var_1"]
+        if "var_1" in entry:
+            self.var_1 = entry["var_1"]
+
         self.payload = entry["payload"]
 
         return self
