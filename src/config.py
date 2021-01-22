@@ -3,6 +3,7 @@ import json5
 
 class Config:
     watchdog_address: int = 0x10007000
+    payload_address: int = 0x100A00
     var_0: int = None
     var_1: int
     payload: str
@@ -29,6 +30,9 @@ class Config:
     def from_dict(self, entry):
         if "watchdog_address" in entry:
             self.watchdog_address = entry["watchdog_address"]
+
+        if "payload_address" in entry:
+            self.payload_address = entry["payload_address"]
 
         if "var_0" in entry:
             self.var_0 = entry["var_0"]

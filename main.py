@@ -57,7 +57,7 @@ def main():
         log("Disabling protection")
 
         payload = open(PAYLOAD_DIR + config.payload, "rb")
-        exploit(device, config.watchdog_address, config.var_0, config.var_1, payload)
+        exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         payload.close()
 
         log("Protection disabled")
