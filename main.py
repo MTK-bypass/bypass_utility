@@ -19,6 +19,7 @@ def main():
     parser.add_argument("-t", "--test", help="Testmode", action="store_true")
     parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex) for testmode")
     parser.add_argument("-v", "--var_1", help="var_1 value(in hex) for testmode")
+    parser.add_argument("-p", "--payload_address", help="payload_address value(in hex) for testmode")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -49,6 +50,8 @@ def main():
                     config.var_1 = int(arguments.var_1, 16)
                 if arguments.watchdog:
                     config.watchdog_address = int(arguments.watchdog, 16)
+                if arguments.payload_address:
+                    config.payload_address = int(arguments.payload_address, 16)
 
                 config.payload = "generic_dump_payload.bin"
 
