@@ -2,7 +2,6 @@ from src.common import to_bytes, from_bytes
 from src.logger import log
 
 import serial.tools.list_ports
-import termios
 import time
 
 BAUD = 115200
@@ -64,7 +63,7 @@ class Device:
                     s = serial.Serial(port_device, timeout=TIMEOUT)
                     s.close()
                     result.add(port_device)
-                except (OSError, serial.SerialException, termios.error):
+                except (OSError, serial.SerialException):
                     pass
 
         return result

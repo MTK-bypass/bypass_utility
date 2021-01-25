@@ -1,10 +1,10 @@
 #!/bin/python3
 
+from src.exploit import exploit
+from src.common import to_bytes
 from src.config import Config
 from src.device import Device
-from src.exploit import exploit
 from src.logger import log
-from src.common import to_bytes
 
 import argparse
 import os
