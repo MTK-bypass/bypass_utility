@@ -23,7 +23,7 @@ class Config:
         if hw_code in config:
             self.from_dict(config[hw_code])
         else:
-            raise RuntimeError("Can't find {} hw_code in config".format(hw_code))
+            raise NotImplementedError("Can't find {} hw_code in config".format(hw_code))
 
         return self
 

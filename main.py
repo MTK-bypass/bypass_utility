@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Device config")
     parser.add_argument("-t", "--test", help="Testmode", action="store_true")
+    parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex) for testmode")
+    parser.add_argument("-v", "--var_1", help="var_1 value(in hex) for testmode")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -37,7 +39,22 @@ def main():
         config = Config().from_file(config_file, hw_code)
         config_file.close()
     else:
-        config = Config().default(hw_code)
+        try:
+            config = Config().default(hw_code)
+        except NotImplementedError as e:
+            if arguments.test:
+                config = Config()
+
+                if arguments.var_1:
+                    config.var_1 = int(arguments.var_1, 16)
+                if arguments.watchdog:
+                    config.watchdog_address = int(arguments.watchdog, 16)
+
+                config.payload = "generic_dump_payload.bin"
+
+                log(e)
+            else:
+                raise e
 
     if not os.path.exists(PAYLOAD_DIR + config.payload):
         raise RuntimeError("Payload file {} doesn't exist".format(PAYLOAD_DIR + config.payload))
@@ -68,20 +85,29 @@ def main():
                 log("Test mode, testing " + hex(config.var_1) + "...")
                 device = Device().find()
                 device.handshake()
-                result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
+                result = exploit(device, config.watchdog_address, config.payload_address,
+                                 config.var_0, config.var_1, payload)
+
+        bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
 
         if result == to_bytes(0xA1A2A3A4, 4):
             log("Protection disabled")
-        elif result  == to_bytes(0xC1C2C3C4, 4):
-            log("Found send_dword, dumping bootrom to 'brom.dump'")
-            with open("brom.dump", "wb") as brom:
-                brom.write(device.read(0x20000))
+        elif result == to_bytes(0xC1C2C3C4, 4):
+            dump_brom(device, bootrom__name)
         elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
-            log("Found send_dword, dumping bootrom to 'brom.dump'")
-            with open("brom.dump", "wb") as brom:
-                for i in range(0x20000 // 4):
-                    device.read(4) # discard garbage
-                    brom.write(device.read(4))
+            dump_brom(device, bootrom__name, True)
+
+
+def dump_brom(device, bootrom__name, word_mode=False):
+    log("Found send_dword, dumping bootrom to {}".format(bootrom__name))
+
+    with open(bootrom__name, "wb") as bootrom:
+        if word_mode:
+            for i in range(0x20000 // 4):
+                device.read(4)  # discard garbage
+                bootrom.write(device.read(4))
+        else:
+            bootrom.write(device.read(0x20000))
 
 
 if __name__ == "__main__":
