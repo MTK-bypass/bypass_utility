@@ -4,6 +4,7 @@ from src.config import Config
 from src.device import Device
 from src.exploit import exploit
 from src.logger import log
+from src.common import to_bytes
 
 import argparse
 import os
@@ -15,6 +16,7 @@ PAYLOAD_DIR = "payloads/"
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Device config")
+    parser.add_argument("-t", "--test", help="Testmode", action="store_true")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -56,11 +58,30 @@ def main():
     if serial_link_authorization or download_agent_authorization:
         log("Disabling protection")
 
-        payload = open(PAYLOAD_DIR + config.payload, "rb")
-        exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
-        payload.close()
+        with open(PAYLOAD_DIR + config.payload, "rb") as payload:
+            payload = payload.read()
 
-        log("Protection disabled")
+        result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
+        if arguments.test:
+            while not result:
+                config.var_1 += 1
+                log("Test mode, testing " + hex(config.var_1) + "...")
+                device = Device().find()
+                device.handshake()
+                result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
+
+        if result == to_bytes(0xA1A2A3A4, 4):
+            log("Protection disabled")
+        elif result  == to_bytes(0xC1C2C3C4, 4):
+            log("Found send_dword, dumping bootrom to 'brom.dump'")
+            with open("brom.dump", "wb") as brom:
+                brom.write(device.read(0x20000))
+        elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
+            log("Found send_dword, dumping bootrom to 'brom.dump'")
+            with open("brom.dump", "wb") as brom:
+                for i in range(0x20000 // 4):
+                    device.read(4) # discard garbage
+                    brom.write(device.read(4))
 
 
 if __name__ == "__main__":
