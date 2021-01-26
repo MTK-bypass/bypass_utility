@@ -84,6 +84,7 @@ def main():
         result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         if arguments.test:
             while not result:
+                device.dev.close()
                 config.var_1 += 1
                 log("Test mode, testing " + hex(config.var_1) + "...")
                 device = Device().find()
