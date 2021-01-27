@@ -11,6 +11,8 @@ import os
 
 DEFAULT_CONFIG = "default_config.json5"
 PAYLOAD_DIR = "payloads/"
+DEFAULT_PAYLOAD = "generic_dump_payload.bin"
+DEFAULT_DA_ADDRESS = 0x200D00
 
 
 def main():
@@ -52,12 +54,12 @@ def main():
             if arguments.test:
                 config = Config()
 
-                config.payload = "generic_dump_payload.bin"
-
                 log(e)
             else:
                 raise e
 
+    if arguments.test:
+        config.payload = DEFAULT_PAYLOAD
     if arguments.var_1:
         config.var_1 = int(arguments.var_1, 16)
     if arguments.watchdog:
@@ -83,12 +85,12 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
-    payload = prepare_payload(config)
-
     result = False
 
     if serial_link_authorization or download_agent_authorization:
         log("Disabling protection")
+
+        payload = prepare_payload(config)
 
         result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         if arguments.test:
@@ -102,6 +104,13 @@ def main():
                                  config.var_0, config.var_1, payload)
     else:
         log("Insecure device, sending payload using send_da")
+
+        if not arguments.payload:
+            config.payload = DEFAULT_PAYLOAD
+        if not arguments.payload_address:
+            config.payload_address = DEFAULT_DA_ADDRESS
+
+        payload = prepare_payload(config)
 
         payload += b'\x00' * 0x100
 
