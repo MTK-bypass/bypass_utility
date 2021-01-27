@@ -91,8 +91,6 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
-    result = False
-
     if serial_link_authorization or download_agent_authorization or arguments.force:
         log("Disabling protection")
 
