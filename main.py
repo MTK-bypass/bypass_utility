@@ -1,7 +1,7 @@
 #!/bin/python3
 
 from src.exploit import exploit
-from src.common import to_bytes
+from src.common import from_bytes, to_bytes
 from src.config import Config
 from src.device import Device
 from src.logger import log
@@ -86,8 +86,7 @@ def main():
     if serial_link_authorization or download_agent_authorization:
         log("Disabling protection")
 
-        with open(PAYLOAD_DIR + config.payload, "rb") as payload:
-            payload = payload.read()
+        payload = prepare_payload(config)
 
         result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         if arguments.test:
@@ -120,6 +119,22 @@ def dump_brom(device, bootrom__name, word_mode=False):
                 bootrom.write(device.read(4))
         else:
             bootrom.write(device.read(0x20000))
+
+
+def prepare_payload(config):
+    with open(PAYLOAD_DIR + config.payload, "rb") as payload:
+        payload = payload.read()
+
+    # replace watchdog_address in generic payload
+    payload = bytearray(payload)
+    if from_bytes(payload[-4:], 4, '<') == 0x10007000:
+        payload[-4:] = to_bytes(config.watchdog_address, 4, '<')
+    payload = bytes(payload)
+
+    while len(payload) % 4 != 0:
+        payload += to_bytes(0)
+
+    return payload
 
 
 if __name__ == "__main__":
