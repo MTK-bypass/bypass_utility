@@ -19,7 +19,9 @@ def main():
     parser.add_argument("-t", "--test", help="Testmode", action="store_true")
     parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex)")
     parser.add_argument("-v", "--var_1", help="var_1 value(in hex)")
-    parser.add_argument("-p", "--payload_address", help="payload_address value(in hex)")
+    parser.add_argument("-a", "--payload_address", help="payload_address value(in hex)")
+    parser.add_argument("-p", "--payload", help="Payload to use")
+    parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -28,7 +30,11 @@ def main():
     elif not os.path.exists(DEFAULT_CONFIG):
         raise RuntimeError("Default config is missing")
 
-    device = Device().find()
+    if arguments.serial_port:
+        device = Device(arguments.serial_port)
+    else:
+        device = Device().find()
+
     device.handshake()
 
     hw_code = device.get_hw_code()
@@ -58,6 +64,8 @@ def main():
         config.watchdog_address = int(arguments.watchdog, 16)
     if arguments.payload_address:
         config.payload_address = int(arguments.payload_address, 16)
+    if arguments.payload:
+        config.payload = arguments.payload
 
     if not os.path.exists(PAYLOAD_DIR + config.payload):
         raise RuntimeError("Payload file {} doesn't exist".format(PAYLOAD_DIR + config.payload))
