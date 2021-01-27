@@ -20,6 +20,7 @@ def main():
     parser.add_argument("-c", "--config", help="Device config")
     parser.add_argument("-t", "--test", help="Testmode", action="store_true")
     parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex)")
+    parser.add_argument("-u", "--uart", help="UART base address(in hex)")
     parser.add_argument("-v", "--var_1", help="var_1 value(in hex)")
     parser.add_argument("-a", "--payload_address", help="payload_address value(in hex)")
     parser.add_argument("-p", "--payload", help="Payload to use")
@@ -67,6 +68,8 @@ def main():
         config.var_1 = int(arguments.var_1, 16)
     if arguments.watchdog:
         config.watchdog_address = int(arguments.watchdog, 16)
+    if arguments.uart:
+        config.uart_base = int(arguments.uart, 16)
     if arguments.payload_address:
         config.payload_address = int(arguments.payload_address, 16)
     if arguments.payload:
@@ -150,10 +153,12 @@ def prepare_payload(config):
     with open(PAYLOAD_DIR + config.payload, "rb") as payload:
         payload = payload.read()
 
-    # replace watchdog_address in generic payload
+    # replace watchdog_address and uart_base in generic payload
     payload = bytearray(payload)
     if from_bytes(payload[-4:], 4, '<') == 0x10007000:
         payload[-4:] = to_bytes(config.watchdog_address, 4, '<')
+    if from_bytes(payload[-8:][:4], 4, '<') == 0x11002000:
+        payload[-8:] = to_bytes(config.uart_base, 4, '<') + payload[-4:]
     payload = bytes(payload)
 
     while len(payload) % 4 != 0:
