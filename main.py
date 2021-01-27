@@ -1,7 +1,7 @@
 #!/bin/python3
 
 from src.exploit import exploit
-from src.common import to_bytes
+from src.common import from_bytes, to_bytes
 from src.config import Config
 from src.device import Device
 from src.logger import log
@@ -11,15 +11,22 @@ import os
 
 DEFAULT_CONFIG = "default_config.json5"
 PAYLOAD_DIR = "payloads/"
+DEFAULT_PAYLOAD = "generic_dump_payload.bin"
+DEFAULT_DA_ADDRESS = 0x200D00
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Device config")
     parser.add_argument("-t", "--test", help="Testmode", action="store_true")
-    parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex) for testmode")
-    parser.add_argument("-v", "--var_1", help="var_1 value(in hex) for testmode")
-    parser.add_argument("-p", "--payload_address", help="payload_address value(in hex) for testmode")
+    parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex)")
+    parser.add_argument("-u", "--uart", help="UART base address(in hex)")
+    parser.add_argument("-v", "--var_1", help="var_1 value(in hex)")
+    parser.add_argument("-a", "--payload_address", help="payload_address value(in hex)")
+    parser.add_argument("-p", "--payload", help="Payload to use")
+    parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
+    parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
+    parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -28,8 +35,13 @@ def main():
     elif not os.path.exists(DEFAULT_CONFIG):
         raise RuntimeError("Default config is missing")
 
-    device = Device().find()
-    device.handshake()
+    if arguments.serial_port:
+        device = Device(arguments.serial_port)
+    else:
+        device = Device().find()
+
+    if not arguments.no_handshake:
+        device.handshake()
 
     hw_code = device.get_hw_code()
     hw_sub_code, hw_ver, sw_ver = device.get_hw_dict()
@@ -46,18 +58,22 @@ def main():
             if arguments.test:
                 config = Config()
 
-                if arguments.var_1:
-                    config.var_1 = int(arguments.var_1, 16)
-                if arguments.watchdog:
-                    config.watchdog_address = int(arguments.watchdog, 16)
-                if arguments.payload_address:
-                    config.payload_address = int(arguments.payload_address, 16)
-
-                config.payload = "generic_dump_payload.bin"
-
                 log(e)
             else:
                 raise e
+
+    if arguments.test:
+        config.payload = DEFAULT_PAYLOAD
+    if arguments.var_1:
+        config.var_1 = int(arguments.var_1, 16)
+    if arguments.watchdog:
+        config.watchdog_address = int(arguments.watchdog, 16)
+    if arguments.uart:
+        config.uart_base = int(arguments.uart, 16)
+    if arguments.payload_address:
+        config.payload_address = int(arguments.payload_address, 16)
+    if arguments.payload:
+        config.payload = arguments.payload
 
     if not os.path.exists(PAYLOAD_DIR + config.payload):
         raise RuntimeError("Payload file {} doesn't exist".format(PAYLOAD_DIR + config.payload))
@@ -75,11 +91,12 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
-    if serial_link_authorization or download_agent_authorization:
+    result = False
+
+    if serial_link_authorization or download_agent_authorization or arguments.force:
         log("Disabling protection")
 
-        with open(PAYLOAD_DIR + config.payload, "rb") as payload:
-            payload = payload.read()
+        payload = prepare_payload(config)
 
         result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         if arguments.test:
@@ -91,15 +108,33 @@ def main():
                 device.handshake()
                 result = exploit(device, config.watchdog_address, config.payload_address,
                                  config.var_0, config.var_1, payload)
+    else:
+        log("Insecure device, sending payload using send_da")
 
-        bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
+        if not arguments.payload:
+            config.payload = DEFAULT_PAYLOAD
+        if not arguments.payload_address:
+            config.payload_address = DEFAULT_DA_ADDRESS
 
-        if result == to_bytes(0xA1A2A3A4, 4):
-            log("Protection disabled")
-        elif result == to_bytes(0xC1C2C3C4, 4):
-            dump_brom(device, bootrom__name)
-        elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
-            dump_brom(device, bootrom__name, True)
+        payload = prepare_payload(config)
+
+        payload += b'\x00' * 0x100
+
+        device.send_da(config.payload_address, len(payload), 0x100, payload)
+        device.jump_da(config.payload_address)
+
+        result = device.read(4)
+
+    bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
+
+    if result == to_bytes(0xA1A2A3A4, 4):
+        log("Protection disabled")
+    elif result == to_bytes(0xC1C2C3C4, 4):
+        dump_brom(device, bootrom__name)
+    elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
+        dump_brom(device, bootrom__name, True)
+    else:
+        log("Payload did not reply")
 
 
 def dump_brom(device, bootrom__name, word_mode=False):
@@ -112,6 +147,24 @@ def dump_brom(device, bootrom__name, word_mode=False):
                 bootrom.write(device.read(4))
         else:
             bootrom.write(device.read(0x20000))
+
+
+def prepare_payload(config):
+    with open(PAYLOAD_DIR + config.payload, "rb") as payload:
+        payload = payload.read()
+
+    # replace watchdog_address and uart_base in generic payload
+    payload = bytearray(payload)
+    if from_bytes(payload[-4:], 4, '<') == 0x10007000:
+        payload[-4:] = to_bytes(config.watchdog_address, 4, '<')
+    if from_bytes(payload[-8:][:4], 4, '<') == 0x11002000:
+        payload[-8:] = to_bytes(config.uart_base, 4, '<') + payload[-4:]
+    payload = bytes(payload)
+
+    while len(payload) % 4 != 0:
+        payload += to_bytes(0)
+
+    return payload
 
 
 if __name__ == "__main__":

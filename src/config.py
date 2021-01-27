@@ -3,6 +3,7 @@ import json5
 
 class Config:
     watchdog_address: int = 0x10007000
+    uart_base: int = 0x11002000
     payload_address: int = 0x100A00
     var_0: int = None
     var_1: int = 0xA
@@ -30,6 +31,9 @@ class Config:
     def from_dict(self, entry):
         if "watchdog_address" in entry:
             self.watchdog_address = entry["watchdog_address"]
+
+        if "uart_base" in entry:
+            self.uart_base = entry["uart_base"]
 
         if "payload_address" in entry:
             self.payload_address = entry["payload_address"]
