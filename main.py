@@ -25,6 +25,7 @@ def main():
     parser.add_argument("-p", "--payload", help="Payload to use")
     parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
     parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
+    parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -38,7 +39,8 @@ def main():
     else:
         device = Device().find()
 
-    device.handshake()
+    if not arguments.no_handshake:
+        device.handshake()
 
     hw_code = device.get_hw_code()
     hw_sub_code, hw_ver, sw_ver = device.get_hw_dict()
