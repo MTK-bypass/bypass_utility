@@ -24,6 +24,7 @@ def main():
     parser.add_argument("-a", "--payload_address", help="payload_address value(in hex)")
     parser.add_argument("-p", "--payload", help="Payload to use")
     parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
+    parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -87,7 +88,7 @@ def main():
 
     result = False
 
-    if serial_link_authorization or download_agent_authorization:
+    if serial_link_authorization or download_agent_authorization or arguments.force:
         log("Disabling protection")
 
         payload = prepare_payload(config)
