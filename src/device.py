@@ -188,3 +188,35 @@ class Device:
             raise RuntimeError("status is {}".format(status))
 
         return from_bytes(hw_sub_code, 2), from_bytes(hw_ver, 2), from_bytes(sw_ver, 2)
+
+    def send_da(self, da_address, da_len, sig_len, da):
+        self.echo(0xD7)
+
+        self.echo(da_address, 4)
+        self.echo(da_len, 4)
+        self.echo(sig_len, 4)
+
+        status = self.dev.read(2)
+
+        if from_bytes(status, 2) != 0:
+            raise RuntimeError("status is {}".format(status))
+
+        self.dev.write(da)
+
+        checksum = self.dev.read(2)
+        status = self.dev.read(2)
+
+        if from_bytes(status, 2) != 0:
+            raise RuntimeError("status is {}".format(status))
+
+        return from_bytes(checksum, 2)
+
+    def jump_da(self, da_address):
+        self.echo(0xD5)
+
+        self.echo(da_address, 4)
+
+        status = self.dev.read(2)
+
+        if from_bytes(status, 2) != 0:
+            raise RuntimeError("status is {}".format(status))

