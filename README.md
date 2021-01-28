@@ -8,6 +8,8 @@ https://github.com/MTK-bypass/exploits_collection
 Skip steps 1-5 after first usage
 
 1. Install [python](https://www.python.org/downloads)(select "Add Python X.X to PATH")
+For Windows 7 x64: https://www.python.org/ftp/python/3.8.6/python-3.8.6-amd64.exe
+For Windows 7 x86: https://www.python.org/ftp/python/3.8.6/python-3.8.6.exe
 2. Install [libusb-win32](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-devel-filter-1.2.6.0.exe/download)
 3. Lunch filter wizard, click next
 4. Connect powered off phone with volume+ button, you should see new serial device in the list. Select it and click install
