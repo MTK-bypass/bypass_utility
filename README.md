@@ -37,6 +37,30 @@ pip install pyusb pyserial json5
 ```
 4. After that, without disconnecting phone, run SP Flash Tool in UART Connection mode
 
+
+Advanced use :
+usage: main.py [-h] [-c CONFIG] [-t] [-w WATCHDOG] [-u UART] [-v VAR_1] [-a PAYLOAD_ADDRESS] [-p PAYLOAD]
+               [-s SERIAL_PORT] [-f] [-n]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIG, --config CONFIG
+                        Device config
+  -t, --test            Testmode
+  -w WATCHDOG, --watchdog WATCHDOG
+                        Watchdog address(in hex)
+  -u UART, --uart UART  UART base address(in hex)
+  -v VAR_1, --var_1 VAR_1
+                        var_1 value(in hex)
+  -a PAYLOAD_ADDRESS, --payload_address PAYLOAD_ADDRESS
+                        payload_address value(in hex)
+  -p PAYLOAD, --payload PAYLOAD
+                        Payload to use
+  -s SERIAL_PORT, --serial_port SERIAL_PORT
+                        Connect to existing serial port
+  -f, --force           Force exploit on insecure device
+  -n, --no_handshake    Skip handshake
+
 ## Credits
 - [@chaosmaster](https://github.com/chaosmaster)
 - [@xyzz](https://github.com/xyzz)
