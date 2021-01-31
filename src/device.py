@@ -154,7 +154,7 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))
 
         target_config = from_bytes(target_config, 4)
 
@@ -172,7 +172,7 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))
 
         return from_bytes(hw_code, 2)
 
@@ -185,7 +185,7 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))
 
         return from_bytes(hw_sub_code, 2), from_bytes(hw_ver, 2), from_bytes(sw_ver, 2)
 
@@ -199,7 +199,7 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))
 
         self.dev.write(da)
 
@@ -207,7 +207,7 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))
 
         return from_bytes(checksum, 2)
 
@@ -219,4 +219,4 @@ class Device:
         status = self.dev.read(2)
 
         if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status))
+            raise RuntimeError("status is {}".format(status.hex()))

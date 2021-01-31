@@ -131,6 +131,8 @@ def main():
         dump_brom(device, bootrom__name)
     elif result == to_bytes(0x0000C1C2, 4) and device.read(4) == to_bytes(0xC1C2C3C4, 4):
         dump_brom(device, bootrom__name, True)
+    elif result != b'':
+        raise RuntimeError("Unexpected result {}".format(result.hex()))
     else:
         log("Payload did not reply")
 
