@@ -13,6 +13,7 @@ PID = "0003"
 class Device:
     def __init__(self, port=None):
         self.dev = None
+        self.preloader = False
         if port:
             self.dev = serial.Serial(port, BAUD, timeout=TIMEOUT)
 
@@ -20,7 +21,7 @@ class Device:
         if self.dev:
             raise RuntimeError("Device already found")
 
-        log("Waiting for bootrom")
+        log("Waiting for device")
 
         old = self.serial_ports()
         while True:
@@ -36,9 +37,12 @@ class Device:
 
             time.sleep(0.25)
 
-        log("Found port = {}".format(port))
+        log("Found port = {}".format(port.device))
 
-        self.dev = serial.Serial(port, BAUD, timeout=TIMEOUT)
+        if not PID in port.hwid:
+            self.preloader = True
+
+        self.dev = serial.Serial(port.device, BAUD, timeout=TIMEOUT)
 
         return self
 
@@ -58,11 +62,11 @@ class Device:
             else:
                 port_hwid = port[2]
                 port_device = port[0]
-            if VID and PID in port_hwid:
+            if VID in port_hwid:
                 try:
                     s = serial.Serial(port_device, timeout=TIMEOUT)
                     s.close()
-                    result.add(port_device)
+                    result.add(port)
                 except (OSError, serial.SerialException):
                     pass
 
@@ -84,8 +88,13 @@ class Device:
             raise RuntimeError("Unexpected output, expected {} got {}".format(gold, test))
 
     def handshake(self):
-        self.write(0xA0)
-        self.check(self.read(1), to_bytes(0x5F))
+        while True:
+            self.write(0xA0)
+            if self.read(1) == to_bytes(0x5F):
+                self.dev.flushInput()
+                break
+        #self.write(0xA0)
+        #self.check(self.read(1), to_bytes(0x5F))
 
         self.write(0x0A)
         self.check(self.read(1), to_bytes(0xF5))
