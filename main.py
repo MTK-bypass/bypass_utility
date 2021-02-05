@@ -27,6 +27,7 @@ def main():
     parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
     parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
     parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
+    parser.add_argument("-m", "--crash_method", help="Method to use for crashing preloader (0, 1, 2)", type=int)
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -46,9 +47,16 @@ def main():
         log("")
         log("Found device in preloader mode, trying to crash...")
         log("")
-        payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
-        device.send_da(0, len(payload), 0, payload)
-        device.jump_da(0)
+        if config.crash_method == 0:
+            payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
+            device.send_da(0, len(payload), 0, payload)
+            device.jump_da(0)
+        elif config.crash_method == 1:
+            payload = b'\x00' * 0x100
+            device.send_da(0, len(payload), 0x100, payload)
+            device.jump_da(0)
+        elif config.crash_method == 2:
+            device.read32(0)
 
         device.dev.close()
 
@@ -171,6 +179,9 @@ def get_device_info(device, arguments):
         config.payload_address = int(arguments.payload_address, 16)
     if arguments.payload:
         config.payload = arguments.payload
+    if arguments.crash_method:
+        config.crash_method = arguments.crash_method
+
 
     if not os.path.exists(PAYLOAD_DIR + config.payload):
         raise RuntimeError("Payload file {} doesn't exist".format(PAYLOAD_DIR + config.payload))

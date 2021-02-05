@@ -8,6 +8,7 @@ class Config:
     var_0: int = None
     var_1: int = 0xA
     payload: str
+    crash_method: int = 0
 
     def default(self, hw_code):
         config = open("default_config.json5")
@@ -43,6 +44,9 @@ class Config:
 
         if "var_1" in entry:
             self.var_1 = entry["var_1"]
+
+        if "crash_method" in entry:
+            self.crash_method = entry["crash_method"]
 
         self.payload = entry["payload"]
 
