@@ -48,9 +48,12 @@ def main():
         log("Found device in preloader mode, trying to crash...")
         log("")
         if config.crash_method == 0:
-            payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
-            device.send_da(0, len(payload), 0, payload)
-            device.jump_da(0)
+            try:
+                payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
+                device.send_da(0, len(payload), 0, payload)
+                device.jump_da(0)
+            except RuntimeError as e:
+                print(e)
         elif config.crash_method == 1:
             payload = b'\x00' * 0x100
             device.send_da(0, len(payload), 0x100, payload)
