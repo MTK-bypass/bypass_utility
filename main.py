@@ -44,31 +44,8 @@ def main():
     config, serial_link_authorization, download_agent_authorization, hw_code  = get_device_info(device, arguments)
 
     while device.preloader:
-
-        print("")
-        log("Found device in preloader mode, trying to crash...")
-        print("")
-        if config.crash_method == 0:
-            try:
-                payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
-                device.send_da(0, len(payload), 0, payload)
-                device.jump_da(0)
-            except RuntimeError as e:
-                log(e)
-                print("")
-        elif config.crash_method == 1:
-            payload = b'\x00' * 0x100
-            device.send_da(0, len(payload), 0x100, payload)
-            device.jump_da(0)
-        elif config.crash_method == 2:
-            device.read32(0)
-
-        device.dev.close()
-
-        device = Device().find()
-
+        device = crash_preloader(device, config)
         config, serial_link_authorization, download_agent_authorization, hw_code  = get_device_info(device, arguments)
-
 
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
@@ -86,6 +63,9 @@ def main():
                 log("Test mode, testing " + hex(config.var_1) + "...")
                 device = Device().find()
                 device.handshake()
+                while device.preloader:
+                    device = crash_preloader(device, config)
+                    device.handshake()
                 result = exploit(device, config.watchdog_address, config.payload_address,
                                  config.var_0, config.var_1, payload)
     else:
@@ -202,6 +182,32 @@ def get_device_info(device, arguments):
     print()
 
     return config, serial_link_authorization, download_agent_authorization, hw_code
+
+def crash_preloader(device, config):
+    print("")
+    log("Found device in preloader mode, trying to crash...")
+    print("")
+    if config.crash_method == 0:
+        try:
+            payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
+            device.send_da(0, len(payload), 0, payload)
+            device.jump_da(0)
+        except RuntimeError as e:
+            log(e)
+            print("")
+    elif config.crash_method == 1:
+        payload = b'\x00' * 0x100
+        device.send_da(0, len(payload), 0x100, payload)
+        device.jump_da(0)
+    elif config.crash_method == 2:
+        device.read32(0)
+
+    device.dev.close()
+
+    device = Device().find()
+
+    return device
+
 
 if __name__ == "__main__":
     main()
