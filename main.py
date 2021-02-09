@@ -43,17 +43,19 @@ def main():
 
     config, serial_link_authorization, download_agent_authorization, hw_code  = get_device_info(device, arguments)
 
-    if device.preloader:
-        log("")
+    while device.preloader:
+
+        print("")
         log("Found device in preloader mode, trying to crash...")
-        log("")
+        print("")
         if config.crash_method == 0:
             try:
                 payload = b'\x00\x01\x9F\xE5\x10\xFF\x2F\xE1' + b'\x00' * 0x110
                 device.send_da(0, len(payload), 0, payload)
                 device.jump_da(0)
             except RuntimeError as e:
-                print(e)
+                log(e)
+                print("")
         elif config.crash_method == 1:
             payload = b'\x00' * 0x100
             device.send_da(0, len(payload), 0x100, payload)
