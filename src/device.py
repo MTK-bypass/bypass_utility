@@ -92,7 +92,11 @@ class Device:
             self.write(0xA0)
             if self.read(1) == to_bytes(0x5F):
                 self.dev.flushInput()
+                self.dev.flushOutput()
                 break
+            self.dev.flushInput()
+            self.dev.flushOutput()
+
         #self.write(0xA0)
         #self.check(self.read(1), to_bytes(0x5F))
 
