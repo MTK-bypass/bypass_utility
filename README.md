@@ -9,7 +9,7 @@ Skip steps 1-5 after first usage
 
 1. Install [python](https://www.python.org/downloads)(select "Add Python X.X to PATH")
 2. Install [libusb-win32](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-devel-filter-1.2.6.0.exe/download)
-3. Lunch filter wizard, click next
+3. Launch filter wizard, click next
 4. Connect powered off phone with volume+ button, you should see new serial device in the list. Select it and click install
 5. Install pyusb, pyserial, json5 with command:
 ```
@@ -25,6 +25,8 @@ python main.py
 ## Usage on Linux
 Skip steps 1-2 after first usage
 To use this you need [FireISO](https://github.com/amonet-kamakiri/fireiso/releases) or [this patch](https://github.com/amonet-kamakiri/kamakiri/blob/master/kernel.patch) for your kernel
+
+Prebuilt kernels for various distros are available [here](https://github.com/amonet-kamakiri/prebuilt-kernels)
 
 1. Install python
 2. Install pyusb, pyserial, json5 as root with command:
