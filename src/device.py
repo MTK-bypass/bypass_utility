@@ -123,13 +123,13 @@ class Device:
         self.echo(addr, 4)
         self.echo(size, 4)
 
-        self.check(self.dev.read(2), to_bytes(0, 2))  # arg check
+        assert from_bytes(self.dev.read(2), 2) <= 0xff
 
         for _ in range(size):
             data = from_bytes(self.dev.read(4), 4)
             result.append(data)
 
-        self.check(self.dev.read(2), to_bytes(0, 2))  # status
+        assert from_bytes(self.dev.read(2), 2) <= 0xff
 
         # support scalar
         if len(result) == 1:
