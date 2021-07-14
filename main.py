@@ -55,7 +55,7 @@ def main():
 
         payload = prepare_payload(config)
 
-        result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, payload)
+        result = exploit(device, config.watchdog_address, config.payload_address, config.var_0, config.var_1, config.ptrs, config.fp, payload)
         if arguments.test:
             while not result:
                 device.dev.close()
@@ -67,7 +67,7 @@ def main():
                     device = crash_preloader(device, config)
                     device.handshake()
                 result = exploit(device, config.watchdog_address, config.payload_address,
-                                 config.var_0, config.var_1, payload)
+                                 config.var_0, config.var_1, config.ptrs, config.fp, payload)
     else:
         log("Insecure device, sending payload using send_da")
 

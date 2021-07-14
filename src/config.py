@@ -9,6 +9,8 @@ class Config:
     var_1: int = 0xA
     payload: str
     crash_method: int = 0
+    ptrs: list = None
+    fp: int = None
 
     def default(self, hw_code):
         config = open("default_config.json5")
@@ -47,6 +49,12 @@ class Config:
 
         if "crash_method" in entry:
             self.crash_method = entry["crash_method"]
+
+        if "ptrs" in entry:
+            self.ptrs = entry["ptrs"]
+
+        if "fp" in entry:
+            self.fp = entry["fp"]
 
         self.payload = entry["payload"]
 
