@@ -123,13 +123,17 @@ class Device:
         self.echo(addr, 4)
         self.echo(size, 4)
 
-        assert from_bytes(self.dev.read(2), 2) <= 0xff
+        status = self.dev.read(2)
+        if from_bytes(status, 2) > 0xff:
+            raise RuntimeError("status is {}".format(status.hex()))
 
         for _ in range(size):
             data = from_bytes(self.dev.read(4), 4)
             result.append(data)
 
-        assert from_bytes(self.dev.read(2), 2) <= 0xff
+        status = self.dev.read(2)
+        if from_bytes(status, 2) > 0xff:
+            raise RuntimeError("status is {}".format(status.hex()))
 
         # support scalar
         if len(result) == 1:
