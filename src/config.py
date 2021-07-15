@@ -11,6 +11,8 @@ class Config:
     crash_method: int = 0
     ptrs: list = None
     fp: int = None
+    pp: int = None
+    loader: str = None
 
     def default(self, hw_code):
         config = open("default_config.json5")
@@ -55,6 +57,12 @@ class Config:
 
         if "fp" in entry:
             self.fp = entry["fp"]
+
+        if "pp" in entry:
+            self.pp = entry["pp"]
+
+        if "loader" in entry:
+            self.loader = entry["loader"]
 
         self.payload = entry["payload"]
 
