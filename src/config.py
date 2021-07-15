@@ -10,8 +10,8 @@ class Config:
     payload: str
     crash_method: int = 0
     ptrs: list = None
-    fp: int = None
-    pp: int = None
+    ps: int = None
+    pt: int = None
     loader: str = None
 
     def default(self, hw_code):
@@ -55,11 +55,11 @@ class Config:
         if "ptrs" in entry:
             self.ptrs = entry["ptrs"]
 
-        if "fp" in entry:
-            self.fp = entry["fp"]
+        if "ps" in entry:
+            self.ps = entry["ps"]
 
-        if "pp" in entry:
-            self.pp = entry["pp"]
+        if "pt" in entry:
+            self.pt = entry["pt"]
 
         if "loader" in entry:
             self.loader = entry["loader"]
