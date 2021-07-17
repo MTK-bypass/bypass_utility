@@ -10,9 +10,9 @@ class Config:
     payload: str
     crash_method: int = 0
     ptrs: list = None
-    ps: int = None
-    pt: int = None
-    pu: int = None
+    ptr_send: int = None
+    ptr_target: int = None
+    ptr_usbdl: int = None
     loader: str = "generic_loader_payload.bin"
 
     def default(self, hw_code):
@@ -56,14 +56,14 @@ class Config:
         if "ptrs" in entry:
             self.ptrs = entry["ptrs"]
 
-        if "ps" in entry:
-            self.ps = entry["ps"]
+        if "ptr_send" in entry:
+            self.ptr_send = entry["ptr_send"]
 
-        if "pt" in entry:
-            self.pt = entry["pt"]
+        if "ptr_target" in entry:
+            self.ptr_target = entry["ptr_target"]
 
-        if "pu" in entry:
-            self.pu = entry["pu"]
+        if "ptr_usbdl" in entry:
+            self.ptr_usbdl = entry["ptr_usbdl"]
 
         if "loader" in entry:
             self.loader = entry["loader"]
