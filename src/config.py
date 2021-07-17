@@ -12,7 +12,8 @@ class Config:
     ptrs: list = None
     ps: int = None
     pt: int = None
-    loader: str = None
+    pu: int = None
+    loader: str = "generic_loader_payload.bin"
 
     def default(self, hw_code):
         config = open("default_config.json5")
@@ -60,6 +61,9 @@ class Config:
 
         if "pt" in entry:
             self.pt = entry["pt"]
+
+        if "pu" in entry:
+            self.pu = entry["pu"]
 
         if "loader" in entry:
             self.loader = entry["loader"]
