@@ -164,7 +164,7 @@ def get_device_info(device, arguments):
         try:
             config = Config().default(hw_code)
         except NotImplementedError as e:
-            if arguments.test:
+            if arguments.test or arguments.bruteforce:
                 config = Config()
 
                 log(e)
