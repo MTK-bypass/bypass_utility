@@ -5,6 +5,7 @@ from src.common import from_bytes, to_bytes
 from src.config import Config
 from src.device import Device
 from src.logger import log
+from src.bruteforce import bruteforce
 
 import argparse
 import os
@@ -28,6 +29,7 @@ def main():
     parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
     parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     parser.add_argument("-m", "--crash_method", help="Method to use for crashing preloader (0, 1, 2)", type=int)
+    parser.add_argument("-b", "--bruteforce", help="Bruteforce mode start value", const="0x9900", nargs='?')
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -50,14 +52,30 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
+    bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
+
+    if arguments.bruteforce:
+        dump_ptr = int(arguments.bruteforce, 16)
+        found = False
+        while not found:
+            log("Test mode, testing " + hex(dump_ptr) + "...")
+            found, dump_ptr = bruteforce(device, config, dump_ptr)
+            device.dev.close()
+            device = Device().find()
+            device.handshake()
+            while device.preloader:
+                device = crash_preloader(device, config)
+                device.handshake()
+        log("Found " + hex(dump_ptr) + ", dumping bootrom to {}".format(bootrom__name))
+        open(bootrom__name, "wb").write(bruteforce(device, config, dump_ptr, True))
+        exit(0)
+
     if serial_link_authorization or download_agent_authorization or arguments.force:
         log("Disabling protection")
 
         payload = prepare_payload(config)
 
-        loader = None
-        if config.loader:
-            loader = open(PAYLOAD_DIR + config.loader, "rb").read()
+        loader = open(PAYLOAD_DIR + config.loader, "rb").read()
 
         result = exploit(device, config, payload, loader)
         if arguments.test:
@@ -87,8 +105,6 @@ def main():
         device.jump_da(config.payload_address)
 
         result = device.read(4)
-
-    bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
 
     if result == to_bytes(0xA1A2A3A4, 4):
         log("Protection disabled")
