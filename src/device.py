@@ -238,7 +238,7 @@ class Device:
         if from_bytes(status, 2) != 0:
             raise RuntimeError("status is {}".format(status.hex()))
 
-    def cmd_da(self, direction, offset, length, data=None):
+    def cmd_da(self, direction, offset, length, data=None, check_status = True):
         self.echo(0xDA)
 
         self.echo(direction, 4)
@@ -255,9 +255,10 @@ class Device:
         else:
             data = self.dev.read(length)
 
-        status = self.dev.read(2)
+        if check_status:
+            status = self.dev.read(2)
 
-        if from_bytes(status, 2) != 0:
-            raise RuntimeError("status is {}".format(status.hex()))
+            if from_bytes(status, 2) != 0:
+                raise RuntimeError("status is {}".format(status.hex()))
 
         return data
