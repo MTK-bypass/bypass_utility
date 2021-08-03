@@ -1,5 +1,4 @@
 from src.common import to_bytes, from_bytes
-from serial.serialutil import SerialException
 
 import usb
 import array

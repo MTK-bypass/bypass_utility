@@ -1,7 +1,8 @@
 from src.common import to_bytes, from_bytes
 from src.logger import log
+import usb
+import array
 
-import serial.tools.list_ports
 import time
 
 BAUD = 115200
@@ -13,64 +14,68 @@ PID = "0003"
 class Device:
     def __init__(self, port=None):
         self.dev = None
+        self.rxbuffer = array.array('B')
         self.preloader = False
-        if port:
-            self.dev = serial.Serial(port, BAUD, timeout=TIMEOUT)
+        self.timeout = TIMEOUT
 
-    def find(self):
+    def find(self, wait=False):
         if self.dev:
             raise RuntimeError("Device already found")
 
         log("Waiting for device")
-
-        old = self.serial_ports()
-        while True:
-            new = self.serial_ports()
-
-            # port added
-            if new > old:
-                port = (new - old).pop()
+        if wait:
+            udev = usb.core.find(idVendor=int(VID, 16))
+            while udev:
+                time.sleep(0.25)
+                udev = usb.core.find(idVendor=int(VID, 16))
+        udev = None
+        while not udev:
+            udev = usb.core.find(idVendor=int(VID, 16))
+            if udev:
                 break
-            # port removed
-            elif old > new:
-                old = new
-
             time.sleep(0.25)
 
-        log("Found port = {}".format(port.device))
+        log("Found device = {0:04x}:{1:04x}".format(udev.idVendor, udev.idProduct))
+        self.dev = self
+        self.udev = udev
 
-        if not PID in port.hwid:
+        try:
+            if self.udev.is_kernel_driver_active(0):
+                self.udev.detach_kernel_driver(0)
+
+            if self.udev.is_kernel_driver_active(1):
+                self.udev.detach_kernel_driver(1)
+
+        except NotImplementedError:
+            pass
+
+        if udev.idProduct != int(PID, 16):
             self.preloader = True
+        else:
+            try:
+                udev.reset()
+                time.sleep(0.5)
+            except usb.core.USBError:
+                pass
 
-        self.dev = serial.Serial(port.device, BAUD, timeout=TIMEOUT)
+            try:
+                self.udev.set_configuration(1)
+
+                usb.util.claim_interface(self.udev, 0)
+                usb.util.claim_interface(self.udev, 1)
+            except usb.core.USBError:
+                pass
+
+        cdc_if = usb.util.find_descriptor(udev.get_active_configuration(), bInterfaceClass=0xA)
+        self.ep_in = usb.util.find_descriptor(cdc_if, custom_match=lambda x: usb.util.endpoint_direction(x.bEndpointAddress) == usb.util.ENDPOINT_IN)
+        self.ep_out = usb.util.find_descriptor(cdc_if, custom_match=lambda x: usb.util.endpoint_direction(x.bEndpointAddress) == usb.util.ENDPOINT_OUT)
+
+        try:
+            self.udev.ctrl_transfer(0x21, 0x20, 0, 0, array.array('B', to_bytes(BAUD, 4 , '<') + b"\x00\x00\x08"))
+        except usb.core.USBError:
+            pass
 
         return self
-
-    @staticmethod
-    def serial_ports():
-        """ Lists available serial ports
-            :returns:
-                A set containing the serial ports available on the system
-        """
-
-        result = set()
-        ports = list(serial.tools.list_ports.comports())
-        for port in ports:
-            if hasattr(port, "hwid"):
-                port_hwid = port.hwid
-                port_device = port.device
-            else:
-                port_hwid = port[2]
-                port_device = port[0]
-            if VID in port_hwid:
-                try:
-                    s = serial.Serial(port_device, timeout=TIMEOUT)
-                    s.close()
-                    result.add(port)
-                except (OSError, serial.SerialException):
-                    pass
-
-        return result
 
     @staticmethod
     def check(test, gold):
@@ -87,34 +92,55 @@ class Device:
 
             raise RuntimeError("Unexpected output, expected {} got {}".format(gold, test))
 
+    def close(self):
+        self.dev = None
+        self.rxbuffer = array.array('B')
+        try:
+            usb.util.release_interface(self.udev, 0)
+            usb.util.release_interface(self.udev, 1)
+        except Exception:
+            pass
+        try:
+            self.udev.attach_kernel_driver(0)
+        except Exception:
+            pass
+        try:
+            self.udev.attach_kernel_driver(1)
+        except Exception:
+            pass
+        self.udev = None
+        time.sleep(1)
+
     def handshake(self):
-        while True:
-            self.write(0xA0)
-            if self.read(1) == to_bytes(0x5F):
-                self.dev.flushInput()
-                self.dev.flushOutput()
-                break
-            self.dev.flushInput()
-            self.dev.flushOutput()
-
-        #self.write(0xA0)
-        #self.check(self.read(1), to_bytes(0x5F))
-
-        self.write(0x0A)
-        self.check(self.read(1), to_bytes(0xF5))
-
-        self.write(0x50)
-        self.check(self.read(1), to_bytes(0xAF))
-
-        self.write(0x05)
-        self.check(self.read(1), to_bytes(0xFA))
+        sequence = b"\xA0\x0A\x50\x05"
+        i = 0
+        while i < len(sequence):
+            self.write(sequence[i])
+            reply = self.read(1)
+            if reply and reply[0] == ~sequence[i] & 0xFF:
+                i += 1
+            else:
+                i = 0
 
     def echo(self, words, size=1):
         self.write(words, size)
         self.check(from_bytes(self.read(size), size), words)
 
     def read(self, size=1):
-        return self.dev.read(size)
+        offset = 0
+        data = b""
+        while len(self.rxbuffer) < size:
+            try:
+                self.rxbuffer.extend(self.ep_in.read(self.ep_in.wMaxPacketSize, self.timeout * 1000))
+            except usb.core.USBError as e:
+                break
+        if size <= len(self.rxbuffer):
+            result = self.rxbuffer[:size]
+            self.rxbuffer = self.rxbuffer[size:]
+        else:
+            result = self.rxbuffer
+            self.rxbuffer = array.array('B')
+        return bytes(result)
 
     def read32(self, addr, size=1):
         result = []
@@ -144,8 +170,10 @@ class Device:
     def write(self, data, size=1):
         if type(data) != bytes:
             data = to_bytes(data, size)
-
-        self.dev.write(data)
+        offset = 0
+        while offset < len(data):
+            self.ep_out.write(data[offset:][:self.ep_out.wMaxPacketSize if len(data) - offset > self.ep_out.wMaxPacketSize else len(data) - offset], self.timeout * 1000)
+            offset += self.ep_out.wMaxPacketSize
 
     def write32(self, addr, words, check_status=True):
         # support scalar

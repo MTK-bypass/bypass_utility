@@ -25,7 +25,6 @@ def main():
     parser.add_argument("-v", "--var_1", help="var_1 value(in hex)")
     parser.add_argument("-a", "--payload_address", help="payload_address value(in hex)")
     parser.add_argument("-p", "--payload", help="Payload to use")
-    parser.add_argument("-s", "--serial_port", help="Connect to existing serial port")
     parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
     parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     parser.add_argument("-m", "--crash_method", help="Method to use for crashing preloader (0, 1, 2)", type=int)
@@ -38,10 +37,7 @@ def main():
     elif not os.path.exists(DEFAULT_CONFIG):
         raise RuntimeError("Default config is missing")
 
-    if arguments.serial_port:
-        device = Device(arguments.serial_port)
-    else:
-        device = Device().find()
+    device = Device().find()
 
     config, serial_link_authorization, download_agent_authorization, hw_code  = get_device_info(device, arguments)
 
@@ -61,7 +57,7 @@ def main():
             log("Test mode, testing " + hex(dump_ptr) + "...")
             found, dump_ptr = bruteforce(device, config, dump_ptr)
             device.dev.close()
-            device = Device().find()
+            device = Device().find(wait=True)
             device.handshake()
             while device.preloader:
                 device = crash_preloader(device, config)
@@ -83,7 +79,7 @@ def main():
                 device.dev.close()
                 config.var_1 += 1
                 log("Test mode, testing " + hex(config.var_1) + "...")
-                device = Device().find()
+                device = Device().find(wait=True)
                 device.handshake()
                 while device.preloader:
                     device = crash_preloader(device, config)
@@ -116,6 +112,8 @@ def main():
         raise RuntimeError("Unexpected result {}".format(result.hex()))
     else:
         log("Payload did not reply")
+
+    device.close()
 
 
 def dump_brom(device, bootrom__name, word_mode=False):
@@ -171,7 +169,7 @@ def get_device_info(device, arguments):
             else:
                 raise e
 
-    if arguments.test:
+    if arguments.test or arguments.bruteforce:
         config.payload = DEFAULT_PAYLOAD
     if arguments.var_1:
         config.var_1 = int(arguments.var_1, 16)
