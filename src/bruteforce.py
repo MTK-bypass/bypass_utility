@@ -15,7 +15,7 @@ def bruteforce(device, config, dump_ptr, dump=False):
     except Exception:
         pass
 
-    udev = usb.core.find(idVendor=0x0E8D, idProduct=0x3)
+    udev = device.udev
 
     try:
         # noinspection PyProtectedMember
