@@ -29,6 +29,7 @@ def main():
     parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     parser.add_argument("-m", "--crash_method", help="Method to use for crashing preloader (0, 1, 2)", type=int)
     parser.add_argument("-b", "--bruteforce", help="Bruteforce mode start value", const="0x9900", nargs='?')
+    parser.add_argument("-k", "--kamakiri", help="Force use of kamakiri", action="store_true")
     arguments = parser.parse_args()
 
     if arguments.config:
@@ -73,7 +74,7 @@ def main():
 
         loader = open(PAYLOAD_DIR + config.loader, "rb").read()
 
-        result = exploit(device, config, payload, loader)
+        result = exploit(device, config, payload, arguments)
         if arguments.test:
             while not result:
                 device.dev.close()
@@ -84,7 +85,7 @@ def main():
                 while device.preloader:
                     device = crash_preloader(device, config)
                     device.handshake()
-                result = exploit(device, config, payload, loader)
+                result = exploit(device, config, payload, arguments)
     else:
         log("Insecure device, sending payload using send_da")
 
