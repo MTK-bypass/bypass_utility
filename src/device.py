@@ -5,6 +5,7 @@ import usb.backend.libusb1
 import usb.backend.libusb0
 from ctypes import c_void_p, c_int
 import array
+import os
 
 import time
 
@@ -22,6 +23,16 @@ class Device:
         self.preloader = False
         self.timeout = TIMEOUT
 
+        if os.name == 'nt':
+            try:
+                file_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
+                try:
+                    os.add_dll_directory(file_dir)
+                except Exception:
+                    pass
+                os.environ['PATH'] = file_dir + ';' + os.environ['PATH']
+            except Exception:
+                pass
 
     def find(self, wait=False):
         if self.dev:
