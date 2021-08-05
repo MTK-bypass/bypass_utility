@@ -57,6 +57,7 @@ def main():
             log("Test mode, testing " + hex(dump_ptr) + "...")
             found, dump_ptr = bruteforce(device, config, dump_ptr)
             device.dev.close()
+            reconnect_message()
             device = Device().find(wait=True)
             device.handshake()
             while device.preloader:
@@ -77,6 +78,7 @@ def main():
                 device.dev.close()
                 config.var_1 += 1
                 log("Test mode, testing " + hex(config.var_1) + "...")
+                reconnect_message()
                 device = Device().find(wait=True)
                 device.handshake()
                 while device.preloader:
@@ -113,6 +115,10 @@ def main():
 
     device.close()
 
+def reconnect_message():
+    print("")
+    print("Please reconnect device in bootrom mode")
+    print("")
 
 def dump_brom(device, bootrom__name, word_mode=False):
     log("Found send_dword, dumping bootrom to {}".format(bootrom__name))
