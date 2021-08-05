@@ -11,7 +11,6 @@ class Config:
     crash_method: int = 0
     ptr_usbdl: int = None
     ptr_da: int = None
-    loader: str = "generic_loader_payload.bin"
 
     def default(self, hw_code):
         config = open("default_config.json5")

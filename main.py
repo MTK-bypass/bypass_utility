@@ -19,7 +19,7 @@ DEFAULT_DA_ADDRESS = 0x200D00
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Device config")
-    parser.add_argument("-t", "--test", help="Testmode", action="store_true")
+    parser.add_argument("-t", "--test", help="Testmode", const="0x9900", nargs='?')
     parser.add_argument("-w", "--watchdog", help="Watchdog address(in hex)")
     parser.add_argument("-u", "--uart", help="UART base address(in hex)")
     parser.add_argument("-v", "--var_1", help="var_1 value(in hex)")
@@ -28,7 +28,6 @@ def main():
     parser.add_argument("-f", "--force", help="Force exploit on insecure device", action="store_true")
     parser.add_argument("-n", "--no_handshake", help="Skip handshake", action="store_true")
     parser.add_argument("-m", "--crash_method", help="Method to use for crashing preloader (0, 1, 2)", type=int)
-    parser.add_argument("-b", "--bruteforce", help="Bruteforce mode start value", const="0x9900", nargs='?')
     parser.add_argument("-k", "--kamakiri", help="Force use of kamakiri", action="store_true")
     arguments = parser.parse_args()
 
@@ -51,8 +50,8 @@ def main():
 
     bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
 
-    if arguments.bruteforce:
-        dump_ptr = int(arguments.bruteforce, 16)
+    if arguments.test and not arguments.kamakiri:
+        dump_ptr = int(arguments.test, 16)
         found = False
         while not found:
             log("Test mode, testing " + hex(dump_ptr) + "...")
@@ -71,8 +70,6 @@ def main():
         log("Disabling protection")
 
         payload = prepare_payload(config)
-
-        loader = open(PAYLOAD_DIR + config.loader, "rb").read()
 
         result = exploit(device, config, payload, arguments)
         if arguments.test:
@@ -163,14 +160,14 @@ def get_device_info(device, arguments):
         try:
             config = Config().default(hw_code)
         except NotImplementedError as e:
-            if arguments.test or arguments.bruteforce:
+            if arguments.test:
                 config = Config()
 
                 log(e)
             else:
                 raise e
 
-    if arguments.test or arguments.bruteforce:
+    if arguments.test:
         config.payload = DEFAULT_PAYLOAD
     if arguments.var_1:
         config.var_1 = int(arguments.var_1, 16)
