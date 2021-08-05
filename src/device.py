@@ -127,6 +127,10 @@ class Device:
         except Exception:
             pass
         try:
+            self.udev.reset()
+        except Exception:
+            pass
+        try:
             self.udev.attach_kernel_driver(0)
         except Exception:
             pass
