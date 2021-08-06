@@ -22,6 +22,7 @@ class Device:
         self.rxbuffer = array.array('B')
         self.preloader = False
         self.timeout = TIMEOUT
+        self.usbdk = False
 
         if os.name == 'nt':
             try:
@@ -41,8 +42,12 @@ class Device:
         try:
             self.backend = usb.backend.libusb1.get_backend(find_library=lambda x: "libusb-1.0.dll")
             if self.backend:
-                self.backend.lib.libusb_set_option.argtypes = [c_void_p, c_int]
-                self.backend.lib.libusb_set_option(self.backend.ctx, 1)  # <--- this is the magic call to enable usbdk mode
+                try:
+                    self.backend.lib.libusb_set_option.argtypes = [c_void_p, c_int]
+                    self.backend.lib.libusb_set_option(self.backend.ctx, 1)  # <--- this is the magic call to enable usbdk mode
+                    self.usbdk = True
+                except ValueError:
+                    log("Failed enabling UsbDk mode, please use 64-Bit Python and 64-Bit UsbDk")
             else:
                 self.backend = usb.backend.libusb1.get_backend()
         except usb.core.USBError:
@@ -126,10 +131,11 @@ class Device:
             usb.util.release_interface(self.udev, 1)
         except Exception:
             pass
-        try:
-            self.udev.reset()
-        except Exception:
-            pass
+        if not self.usbdk:
+            try:
+                self.udev.reset()
+            except Exception:
+                pass
         try:
             self.udev.attach_kernel_driver(0)
         except Exception:
@@ -138,7 +144,11 @@ class Device:
             self.udev.attach_kernel_driver(1)
         except Exception:
             pass
-        usb.util.dispose_resources(self.udev)
+        if not self.usbdk:
+            try:
+                usb.util.dispose_resources(self.udev)
+            except Exception:
+                pass
         self.udev = None
         time.sleep(1)
 
