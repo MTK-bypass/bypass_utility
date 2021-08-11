@@ -23,6 +23,7 @@ class Device:
         self.preloader = False
         self.timeout = TIMEOUT
         self.usbdk = False
+        self.libusb0 = False
 
         if os.name == 'nt':
             try:
@@ -81,11 +82,18 @@ class Device:
 
         try:
             self.configuration = self.udev.get_active_configuration()
-        except usb.core.USBError as e:
-            if e.errno == 13:
+        except (usb.core.USBError, NotImplementedError) as e:
+            if type(e) is usb.core.USBError and e.errno == 13 or type(e) is NotImplementedError:
+                log("Failed to enable libusb1, is UsbDk installed?")
+                log("Falling back to libusb0 (kamakiri only)")
                 self.backend = usb.backend.libusb0.get_backend()
                 self.udev = usb.core.find(idVendor=int(VID, 16), backend=self.backend)
-            self.udev.set_configuration()
+                self.libusb0 = True
+            try:
+                self.udev.set_configuration()
+            except AttributeError:
+                log("Failed to enable libusb0")
+                exit(1)
 
         if self.udev.idProduct != int(PID, 16):
             self.preloader = True

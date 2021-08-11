@@ -48,6 +48,9 @@ def main():
     log("Disabling watchdog timer")
     device.write32(config.watchdog_address, 0x22000064)
 
+    if device.libusb0:
+        arguments.kamakiri = True
+
     bootrom__name = "bootrom_" + hex(hw_code)[2:] + ".bin"
 
     if arguments.test and not arguments.kamakiri:
